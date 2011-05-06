@@ -1,0 +1,47 @@
+From 181e5d2b54ffd87b1d2ce8560fe38cd79fbbf0ed Mon Sep 17 00:00:00 2001
+From: Jacques Kvam <jwkvam@gmail.com>
+Date: Wed, 4 May 2011 20:33:06 -0700
+Subject: [PATCH] add increment and decrement functions
+
+---
+ lib/awful/widget/progressbar.lua.in |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/lib/awful/widget/progressbar.lua.in b/lib/awful/widget/progressbar.lua.in
+index de6d041..3c0b6c6 100644
+--- a/lib/awful/widget/progressbar.lua.in
++++ b/lib/awful/widget/progressbar.lua.in
+@@ -181,6 +181,20 @@ function set_value(pbar, value)
+     return pbar
+ end
+ 
++--- Increments the value of the progressbar by delta.
++-- @param pbar The progress bar.
++-- @param delta The amount added to the value.
++function increment(pbar, delta)
++    return set_value(pbar, data[pbar].value + delta)
++end
++
++--- Decrements the value of the progressbar by delta.
++-- @param pbar The progress bar.
++-- @param delta The amount subtracted from the value.
++function decrement(pbar, delta)
++    return set_value(pbar, data[pbar].value - delta)
++end
++
+ --- Set the progressbar height.
+ -- @param progressbar The progressbar.
+ -- @param height The height to set.
+@@ -233,6 +247,9 @@ function new(args)
+         pbar["set_" .. prop] = _M["set_" .. prop]
+     end
+ 
++    pbar["increment"] = _M["increment"]
++    pbar["decrement"] = _M["decrement"]
++
+     pbar.layout = args.layout or layout.horizontal.leftright
+ 
+     return pbar
+-- 
+1.7.5.rc3
+
