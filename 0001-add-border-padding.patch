@@ -1,0 +1,51 @@
+From 146b7c865b4c72ff771ee9c1aa718a06f519f3f3 Mon Sep 17 00:00:00 2001
+From: Jacques Kvam <jwkvam@gmail.com>
+Date: Thu, 5 May 2011 21:11:27 -0700
+Subject: [PATCH] add border padding
+
+---
+ lib/awful/widget/progressbar.lua.in |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/lib/awful/widget/progressbar.lua.in b/lib/awful/widget/progressbar.lua.in
+index 3c0b6c6..ed8496e 100644
+--- a/lib/awful/widget/progressbar.lua.in
++++ b/lib/awful/widget/progressbar.lua.in
+@@ -49,6 +49,12 @@ local data = setmetatable({}, { __mode = "k" })
+ -- @param progressbar The progressbar.
+ -- @param vertical A boolean value.
+ 
++--- Set the progressbar to draw with padding from the border.
++-- @name set_border_padding
++-- @class function
++-- @param progressbar The progressbar.
++-- @param value The value.
++
+ --- Set the progressbar to draw ticks. Default is false.
+ -- @name set_ticks
+ -- @class function
+@@ -73,7 +79,7 @@ local data = setmetatable({}, { __mode = "k" })
+ -- @param progressbar The progressbar.
+ -- @param value The value.
+ 
+-local properties = { "width", "height", "border_color",
++local properties = { "width", "height", "border_color", "border_padding",
+                      "gradient_colors", "color", "background_color",
+                      "vertical", "value", "max_value",
+                      "ticks", "ticks_gap", "ticks_size" }
+@@ -102,6 +108,12 @@ local function update(pbar)
+         over_drawn_width = width - 2 -- remove 2 for borders
+         over_drawn_height = height - 2 -- remove 2 for borders
+         border_width = 1
++
++        if data[pbar].border_padding then
++            border_width = border_width + data[pbar].border_padding
++            over_drawn_width = over_drawn_width - (data[pbar].border_padding * 2)
++            over_drawn_height = over_drawn_height - (data[pbar].border_padding * 2)
++        end
+     end
+ 
+     local angle = 270
+-- 
+1.7.5.rc3
+

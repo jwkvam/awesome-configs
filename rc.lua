@@ -69,9 +69,11 @@ vicious.register(memwidget, vicious.widgets.mem, "$1 ($2MB/$3MB)", 13)
 
 -- {{{ Volume Widget
 volume_bar = awful.widget.progressbar({layout = awful.widget.layout.horizontal.rightleft})
-volume_bar:set_vertical(true):set_ticks(true)
-volume_bar:set_width(8)
+volume_bar:set_vertical(true):set_ticks(true):set_ticks_size(1)
+volume_bar:set_height(19):set_width(10)
 volume_bar:set_background_color(beautiful.off_widget)
+volume_bar:set_border_color(beautiful.fg_widget)
+volume_bar:set_border_padding(1)
 volume_bar:set_gradient_colors({ beautiful.fg_widget, 
   beautiful.fg_center_widget, beautiful.fg_end_widget})
 
@@ -86,7 +88,7 @@ function toggle_volume()
      if string.match(status, "off") then -- muted
        volume_bar:set_border_color(beautiful.fg_end_widget)
      else -- unmuted
-       volume_bar:set_border_color()
+       volume_bar:set_border_color(beautiful.fg_widget)
      end
 end
 
@@ -101,7 +103,6 @@ function lower_volume()
 end
 
 volume_bar.widget:buttons(awful.util.table.join(
-   --awful.button({ }, 1, function () toggle() end),
    awful.button({ }, 1, toggle_volume),
    awful.button({ }, 4, raise_volume),
    awful.button({ }, 5, lower_volume)
