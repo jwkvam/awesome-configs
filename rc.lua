@@ -6,8 +6,8 @@ require("awful.rules")
 require("beautiful")
 -- Notification library
 require("naughty")
-
-require("vicious")
+-- Widget library
+vicious = require("vicious")
 
 function debug(x) 
   naughty.notify({
@@ -43,8 +43,8 @@ layouts =
     awful.layout.suit.tile.top,
     awful.layout.suit.fair,
     awful.layout.suit.fair.horizontal,
-    awful.layout.suit.spiral,
-    awful.layout.suit.spiral.dwindle,
+    --awful.layout.suit.spiral,
+    --awful.layout.suit.spiral.dwindle,
     awful.layout.suit.max,
     awful.layout.suit.max.fullscreen,
     awful.layout.suit.magnifier,
@@ -64,7 +64,7 @@ end
 -- {{{ Memory Widget
 memwidget = widget({ type = "textbox", layout = awful.widget.layout.horizontal.rightleft })
 vicious.cache(vicious.widgets.mem)
-vicious.register(memwidget, vicious.widgets.mem, "$1 ($2MB/$3MB)", 13)
+vicious.register(memwidget, vicious.widgets.mem, "M:$2MB/$3MB", 13)
 -- }}}
 
 -- {{{ Volume Widget
@@ -78,7 +78,7 @@ volume_bar:set_gradient_colors({ beautiful.fg_widget,
   beautiful.fg_center_widget, beautiful.fg_end_widget})
 
 vicious.cache(vicious.widgets.volume)
-vicious.register(volume_bar, vicious.widgets.volume, "$1", 2, "Master")
+vicious.register(volume_bar, vicious.widgets.volume, "$1", 37, "Master")
 
 function toggle_volume()
      exec("amixer -q set Master toggle", false) 
@@ -91,12 +91,10 @@ function toggle_volume()
        volume_bar:set_border_color(beautiful.fg_widget)
      end
 end
-
 function raise_volume()
      exec("amixer -q set Master 2dB+", false) 
      volume_bar:increment(0.03125)
 end
-
 function lower_volume()
      exec("amixer -q set Master 2dB-", false) 
      volume_bar:decrement(0.03125)
@@ -105,21 +103,42 @@ end
 volume_bar.widget:buttons(awful.util.table.join(
    awful.button({ }, 1, toggle_volume),
    awful.button({ }, 4, raise_volume),
-   awful.button({ }, 5, lower_volume)
-)) -- Register assigned buttons
+   awful.button({ }, 5, lower_volume)))
 -- }}}
 
 -- {{{ CPU Usage Widget
---require("widget")
-cpuwidget = awful.widget.graph({layout = awful.widget.layout.horizontal.rightleft})
-cpuwidget:set_width(40)
-cpuwidget:set_background_color("#494B4F")
---cpuwidget:set_background_color('#333333')
-cpuwidget:set_color('#FF5656')
-cpuwidget:set_gradient_colors({ '#FF5656', '#88A175', '#AECF96' })
+cpu_graph = awful.widget.graph({layout = awful.widget.layout.horizontal.rightleft})
+cpu_graph:set_width(40)
+cpu_graph:set_background_color(beautiful.off_widget)
+cpu_graph:set_gradient_colors({ beautiful.fg_widget, 
+  beautiful.fg_center_widget, beautiful.fg_end_widget})
 vicious.cache(vicious.widgets.cpu)
-vicious.register(cpuwidget, vicious.widgets.cpu, "$1", 3)
+vicious.register(cpu_graph, vicious.widgets.cpu, "$1", 7)
+
+cpuwidget = widget({ type = "textbox", layout = awful.widget.layout.horizontal.rightleft })
+vicious.register(cpuwidget, vicious.widgets.cpu, " P:$1", 5)
 -- }}}
+
+-- {{{
+netwidget = widget({ type = "textbox", layout = awful.widget.layout.horizontal.rightleft })
+vicious.register(netwidget, vicious.widgets.net, "U:${eth0 up_kb}kb/s D:${eth0 down_kb}kb/s ", 3)
+-- }}}
+
+columnswidget = {}
+masterswidget = {}
+for s = 1, screen.count() do
+  columnswidget[s] = widget({ type = "textbox", layout = awful.widget.layout.horizontal.rightleft })
+  columnswidget[s].text = "C:1"
+  masterswidget[s] = widget({ type = "textbox", layout = awful.widget.layout.horizontal.rightleft })
+  masterswidget[s].text = "M:1"
+end
+
+function update_cols(s)
+  columnswidget[s].text = "C:" .. awful.tag.getncol(awful.tag.selected(s))
+end
+function update_mast(s)
+  masterswidget[s].text = "M:" .. awful.tag.getnmaster(awful.tag.selected(s))
+end
 
 -- {{{ Wibox
 -- Create a textclock widget
@@ -197,11 +216,15 @@ for s = 1, screen.count() do
             layout = awful.widget.layout.horizontal.leftright
         },
 
-        s == 1 and mysystray or nil,
         mytextclock,
+        columnswidget[s],
+        masterswidget[s],
+        s == 1 and mysystray or nil,
+        s == 1 and volume_bar or nil,
+        s == 1 and cpu_graph or nil,
         s == 1 and cpuwidget or nil,
         s == 1 and memwidget or nil,
-        s == 1 and volume_bar or nil,
+        s == 1 and netwidget or nil,
         mytasklist[s],
         layout = awful.widget.layout.horizontal.rightleft
     }
@@ -219,16 +242,30 @@ root.buttons(awful.util.table.join(
 globalkeys = awful.util.table.join(
     awful.key({ "Control",        }, "Left",   awful.tag.viewprev       ),
     awful.key({ "Control",        }, "Right",  awful.tag.viewnext       ),
+    awful.key({ modkey,           }, "p",   awful.tag.viewprev       ),
+    awful.key({ modkey,           }, "n",  awful.tag.viewnext       ),
     awful.key({ modkey,           }, "Escape", awful.tag.history.restore),
 
+    --awful.key({ modkey,           }, "l", function () awful.tag.incmwfact( 0.05)    end),
+    --awful.key({ modkey,           }, "h", function () awful.tag.incmwfact(-0.05)    end),
+    awful.key({ modkey,           }, "l", function () 
+      awful.client.focus.bydirection("right")    
+            if client.focus then client.focus:raise() end
+    end),
+    awful.key({ modkey,           }, "h", function () 
+      awful.client.focus.bydirection("left")    
+            if client.focus then client.focus:raise() end
+    end),
     awful.key({ modkey,           }, "j",
         function ()
-            awful.client.focus.byidx( 1)
+            --awful.client.focus.byidx( 1)
+            awful.client.focus.bydirection("down")
             if client.focus then client.focus:raise() end
         end),
     awful.key({ modkey,           }, "k",
         function ()
-            awful.client.focus.byidx(-1)
+            --awful.client.focus.byidx(-1)
+            awful.client.focus.bydirection("up")
             if client.focus then client.focus:raise() end
         end),
     awful.key({ modkey,           }, "w", function () mymainmenu:show({keygrabber=true}) end),
@@ -252,19 +289,29 @@ globalkeys = awful.util.table.join(
     awful.key({ modkey, "Control" }, "r", awesome.restart),
     awful.key({ modkey, "Shift"   }, "q", awesome.quit),
 
-    awful.key({ modkey,           }, "l",     function () awful.tag.incmwfact( 0.05)    end),
-    awful.key({ modkey,           }, "h",     function () awful.tag.incmwfact(-0.05)    end),
-    awful.key({ modkey, "Shift"   }, "h",     function () awful.tag.incnmaster( 1)      end),
-    awful.key({ modkey, "Shift"   }, "l",     function () awful.tag.incnmaster(-1)      end),
-    awful.key({ modkey, "Control" }, "h",     function () awful.tag.incncol( 1)         end),
-    awful.key({ modkey, "Control" }, "l",     function () awful.tag.incncol(-1)         end),
+    awful.key({ modkey, "Shift"   }, "h",     function () 
+      awful.tag.incnmaster( 1)      
+      update_mast()
+    end),
+    awful.key({ modkey, "Shift"   }, "l",     function () 
+      awful.tag.incnmaster(-1)      
+      update_mast()
+    end),
+    awful.key({ modkey, "Control" }, "h",     function () 
+      awful.tag.incncol( 1)         
+      update_cols()
+    end),
+    awful.key({ modkey, "Control" }, "l",     function () 
+      awful.tag.incncol(-1)         
+      update_cols()
+    end),
     awful.key({ modkey,           }, "space", function () awful.layout.inc(layouts,  1) end),
     awful.key({ modkey, "Shift"   }, "space", function () awful.layout.inc(layouts, -1) end),
 
     -- Prompt
     --awful.key({ modkey },            "r",     function () mypromptbox[mouse.screen]:run() end),
     awful.key({ modkey },            "r",     function () 
-    	awful.util.spawn_with_shell("exe=`dmenu_path | yeganesh` && exec $exe") 
+    awful.util.spawn_with_shell("exec `echo | yeganesh -x`") 
 	end),
 
     awful.key({ modkey }, "x",
@@ -363,6 +410,9 @@ awful.rules.rules = {
       properties = { floating = true } },
     { rule = { class = "gimp" },
       properties = { floating = true } },
+    -- Adobe Flash
+    { rule = { class = "Exe" },
+      properties = { floating = true } },
     -- Set Firefox to always map on tags number 2 of screen 1.
     -- { rule = { class = "Firefox" },
     --   properties = { tag = tags[1][2] } },
@@ -399,5 +449,13 @@ end)
 client.add_signal("focus", function(c) c.border_color = beautiful.border_focus end)
 client.add_signal("unfocus", function(c) c.border_color = beautiful.border_normal end)
 -- }}}
+
+for s = 1, screen.count() do
+    -- Each screen has its own tag table.
+    screen[s]:add_signal("tag::history::update", function() 
+      update_cols(s)
+      update_mast(s)
+    end)
+end
 
 --vim: ts=4:sw=4:expandtab:
